@@ -32,6 +32,9 @@ public class ChessMatch {
 	public Color getCurrentPlayer() {
 		return currentPlayer;
 	}
+	public boolean getCheck() {
+		return check;
+	}
 	
 	public ChessPiece[][] getPieces() {
 		ChessPiece[][] mat = new ChessPiece[board.getRows()][board.getColumns()];
@@ -55,6 +58,14 @@ public class ChessMatch {
 		validateSourcePosition(source);
 		validateTargetPosition(source, target);
 		Piece capturedPiece = makeMove(source, target);
+		
+		if (testCheck(currentPlayer)) {
+			undoMove(source, target, capturedPiece);
+			throw new ChessException("You can´t put youtself in check");
+		}
+		
+		check = (testCheck(opponent(currentPlayer))) ? true : false;
+		
 		nextTurn();
 		return (ChessPiece)capturedPiece;
 	}
@@ -72,18 +83,17 @@ public class ChessMatch {
 		return capturedPiece;
 	}
 	
-	private void UndoMove(Position source, Position target, Piece capturePiece) {
+	private void undoMove(Position source, Position target, Piece capturedPiece) {
 		Piece p = board.removePiece(target);
 		board.placePiece(p, source);
-		
-		if(capturedPieces != null) {
-			board.placePiece(capturePiece, target);
-			
-			capturedPieces.remove(capturedPieces);
-			piecesOnTheBoard.add(capturePiece);
-			
+
+		if (capturedPiece != null) {
+			board.placePiece(capturedPiece, target);
+			capturedPieces.remove(capturedPiece);
+			piecesOnTheBoard.add(capturedPiece);
 		}
 	}
+
 	
 	
 	private void validateSourcePosition(Position position) {
@@ -129,6 +139,14 @@ public class ChessMatch {
 	private boolean testCheck(Color color) {
 		Position KingPosition = king(color).getChessPosition().toPosition();
 		List<Piece> opponentPieces = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+		for (Piece p : opponentPieces) {
+			boolean [][] mat = p.possibleMoves();
+			if (mat[KingPosition.getRow()][KingPosition.getColumn()]) {
+				return true;
+			}
+		
+		}
+		return false;
 	}
 	
 	
